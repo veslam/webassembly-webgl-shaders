@@ -8,6 +8,7 @@ public:
 
     void run (uint8_t* buffer);
     void test (uint8_t* buffer);
+    void renderMasks (uint8_t* buffer);
 
 private:
     int width;

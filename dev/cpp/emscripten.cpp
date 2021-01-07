@@ -58,7 +58,7 @@ extern "C" {
     void runTests (uint8_t *buf, int bufSize) {
         printf("[WASM] Detecting edges \n");
 
-        contexts[1]->test(buf);
+        contexts[1]->renderMasks(buf);
         free(buf);
     }
 

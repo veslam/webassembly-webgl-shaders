@@ -59,3 +59,47 @@ std::string edge_detect_fragment_source =
     "  vec3 sobel = vec3(sqrt((sobel_x.rgb * sobel_x.rgb) + (sobel_y.rgb * sobel_y.rgb)));\n"
     "  gl_FragColor = vec4( sobel, 1.0 );   \n"
     "}                                                   \n";
+
+
+const char* mask_vsh = R"(
+
+attribute vec3 aPosition;
+attribute vec2 TexCoordIn;
+
+varying float dis;
+
+void main() {
+    gl_Position = vec4(aPosition, 1.0);
+    dis = TexCoordIn.x;
+}
+
+)";
+
+const char* mask_fsh = R"(
+
+precision highp float;
+varying float dis;
+uniform int mode;
+
+void main() {
+    float weight = 1.0;
+
+    if (0 == mode) // lips
+    {
+        weight = 1.0;
+    }
+    else if (1 == mode) // eyes
+    {
+        weight = 1.0;
+        if (dis < 0.05) {
+            weight = 0.5 + 0.5 * (dis/0.05);
+        }
+        else if (dis > 0.95) {
+            weight = 1.0 - 0.5 * ((dis-0.95)/0.05);
+        }
+    }
+
+    gl_FragColor = vec4(vec3(weight), 1.0);
+}
+
+)";
