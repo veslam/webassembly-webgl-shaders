@@ -56,22 +56,34 @@ GLuint GLUtils::createProgram (GLuint vertexShader, GLuint fragmentShader) {
 
 //---------------------------------------------------------------------------
 
-void GLUtils::genTexture(GLuint* texture) {
-	if (0 == *texture) {
-		glGenTextures(1, texture);
+void GLUtils::genTexture(GLuint& texture) {
+	if (0 == texture) {
+		glGenTextures(1, &texture);
 	}
 }
-void GLUtils::genBuffer(GLuint* buffer) {
-	if (0 == *buffer) {
-		glGenBuffers(1, buffer);
+void GLUtils::genBuffer(GLuint& buffer) {
+	if (0 == buffer) {
+		glGenBuffers(1, &buffer);
 	}
 }
 
-// GLuint GLUtils::setArrayBuffer (array, GLuint buffer, usage=GL_STATIC_DRAW) {
-// 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-// 	glBufferData(GL_ARRAY_BUFFER, array, usage);
-// 	return buffer;
-// }
+//---------------------------------------------------------------------------
+
+void GLUtils::setArrayBuffer (GLfloat* vertex_array, GLint size, GLuint vertex_buffer, GLenum usage) {
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+	glBufferData(GL_ARRAY_BUFFER, size, vertex_array, usage);
+}
+
+void GLUtils::setElementArrayBuffer (GLushort* index_array, GLint size, GLuint index_buffer, GLenum usage) {
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, index_array, usage);
+}
+
+void GLUtils::setVertexAttrib (GLuint index) {
+	glVertexAttribPointer(index, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
+	glEnableVertexAttribArray(index);
+}
+
 
 //---------------------------------------------------------------------------
 // use?

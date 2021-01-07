@@ -149,7 +149,7 @@ void Context::test (uint8_t* buffer) {
 
 
     // Generate a texture object
-    GLUtils::genTexture(&texId);
+    GLUtils::genTexture(texId);
     glUniform1i(textureLoc, 0);
 
     // Bind it
@@ -180,26 +180,16 @@ void Context::test (uint8_t* buffer) {
     };
     GLushort indices[] = {0, 1, 2, 0, 2, 3};
 
-    printf("[test] A vVertexObject = %d \n", vVertexObject);
-    GLUtils::genBuffer(&vVertexObject);
-    printf("[test] B vVertexObject = %d \n", vVertexObject);
+    GLUtils::genBuffer(vVertexObject);
+    GLUtils::setArrayBuffer(vVertices, sizeof(vVertices), vVertexObject, GL_STATIC_DRAW);
+    GLUtils::setVertexAttrib(positionLoc);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vVertexObject);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vVertices), vVertices, GL_STATIC_DRAW);
-    // Load and enable the vertex position and texture coordinates
-    glVertexAttribPointer(positionLoc, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
+    GLUtils::genBuffer(tVertexObject);
+    GLUtils::setArrayBuffer(tVertices, sizeof(tVertices), tVertexObject, GL_STATIC_DRAW);
+    GLUtils::setVertexAttrib(texCoordLoc);
 
-    GLUtils::genBuffer(&tVertexObject);
-    glBindBuffer(GL_ARRAY_BUFFER, tVertexObject);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(tVertices), tVertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
-
-    glEnableVertexAttribArray(positionLoc);
-    glEnableVertexAttribArray(texCoordLoc);
-
-    GLUtils::genBuffer(&indexObject);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexObject);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    GLUtils::genBuffer(indexObject);
+    GLUtils::setElementArrayBuffer(indices, sizeof(indices), indexObject, GL_STATIC_DRAW);
 
     // Draw
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
