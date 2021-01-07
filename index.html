@@ -62,7 +62,8 @@
 
             // Pass the imageData to the C++ code
             ccallArrays("loadTexture", null, ["array"], [imageData], {heapIn: "HEAPU8"})
-            ccallArrays("detectEdges", null, ["array"], [imageData], {heapIn: "HEAPU8"})
+            // ccallArrays("detectEdges", null, ["array"], [imageData], {heapIn: "HEAPU8"})
+            ccallArrays("runTests", null, ["array"], [imageData], {heapIn: "HEAPU8"})
         })
     })
     </script>
