@@ -61,7 +61,118 @@ std::string edge_detect_fragment_source =
     "}                                                   \n";
 
 
-const char* mask_vsh = R"(
+
+
+std::string base_vsh = R"(
+
+precision mediump float;
+
+attribute vec3 aPosition;
+
+attribute vec2 TexCoordIn;
+varying vec2 TexCoordOut;
+
+void main(void) {
+    gl_Position = vec4(aPosition, 1.);
+
+    TexCoordOut = TexCoordIn;
+}
+)";
+
+std::string base_fsh = R"(
+
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+
+uniform sampler2D Texture;
+uniform sampler2D filterTexture;
+
+uniform int do_filter; // 滤镜美颜开关
+uniform int do_tilt;
+uniform vec3 tilt_factor;
+
+uniform float mouse_protection_value;
+uniform vec2 mouth_center;
+uniform float mouse_radius_x;
+uniform float mouse_radius_y;
+uniform int orientation;
+
+varying vec2 TexCoordOut;
+
+vec3 filterRGB(vec3 color) {
+    mediump float blueColor = color.b * 63.0;
+
+    mediump vec2 quad1;
+    quad1.y = floor(floor(blueColor) / 8.0);
+    quad1.x = floor(blueColor) - (quad1.y * 8.0);
+
+    mediump vec2 quad2;
+    quad2.y = floor(ceil(blueColor) / 8.0);
+    quad2.x = ceil(blueColor) - (quad2.y * 8.0);
+
+    mediump vec2 texPos1;
+    texPos1.x = (quad1.x * 0.125) + 0.5/512.0 + ((0.125 - 1.0/512.0) * color.r);
+    texPos1.y = (quad1.y * 0.125) + 0.5/512.0 + ((0.125 - 1.0/512.0) * color.g);
+
+    mediump vec2 texPos2;
+    texPos2.x = (quad2.x * 0.125) + 0.5/512.0 + ((0.125 - 1.0/512.0) * color.r);
+    texPos2.y = (quad2.y * 0.125) + 0.5/512.0 + ((0.125 - 1.0/512.0) * color.g);
+
+    lowp vec4 newColor1 = texture2D(filterTexture, texPos1);
+    lowp vec4 newColor2 = texture2D(filterTexture, texPos2);
+
+    lowp vec4 newColor = mix(newColor1, newColor2, fract(blueColor));
+    return newColor.rgb;
+}
+
+void main(void) {
+    vec4 color = texture2D(Texture, TexCoordOut);
+
+    if (1 == do_filter) {
+        vec3 filtered_rgb = filterRGB(color.rgb);
+
+        if (mouse_protection_value > 0.0) {
+            float dis_y_mouse, dis_x_mouse;
+            if (orientation == 0 || orientation == 180)
+            {
+                dis_x_mouse = TexCoordOut.x - mouth_center.x;
+                dis_y_mouse = TexCoordOut.y - mouth_center.y;
+            } else {
+                dis_y_mouse = TexCoordOut.x - mouth_center.x;
+                dis_x_mouse = TexCoordOut.y - mouth_center.y;
+            }
+
+            // mouth_dis_protection = 0.0最保护
+            float mouth_dis_protection = 1.0 - mouse_protection_value * exp((-0.5) * (pow(dis_x_mouse / (0.6 * mouse_radius_x), 2.0) + pow(dis_y_mouse / (0.6 * mouse_radius_y), 2.0)));
+            float geometric_protection = mouth_dis_protection;
+            color.rgb = mix(color.rgb, filtered_rgb, geometric_protection);
+        }
+        else {
+            color.rgb = filtered_rgb;
+        }
+    }
+
+    if (1 == do_tilt) {
+        float alpha = 0.5; // 目前获取不了肤色所以不能与美容shader统一，因此全屏tilt，设0.5为了缓和一些。
+        vec3 _tilt_factor = tilt_factor;
+        _tilt_factor.y = 0.95;
+        color.rgb *=  alpha * _tilt_factor + (1.0 - alpha) * vec3(1.0);
+    }
+
+    gl_FragColor = color;
+}
+)";
+
+
+
+
+
+
+// const char* mask_vsh = R"(
+std::string mask_vsh = R"(
 
 attribute vec3 aPosition;
 attribute vec2 TexCoordIn;
@@ -75,7 +186,8 @@ void main() {
 
 )";
 
-const char* mask_fsh = R"(
+// const char* mask_fsh = R"(
+std::string mask_fsh = R"(
 
 precision highp float;
 varying float dis;

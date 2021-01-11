@@ -56,9 +56,10 @@ extern "C" {
 
     EMSCRIPTEN_KEEPALIVE
     void runTests (uint8_t *buf, int bufSize) {
-        printf("[WASM] Detecting edges \n");
+        printf("[WASM] Runing Tests \n");
 
-        contexts[1]->renderMasks(buf);
+        // contexts[1]->renderMasks(buf);
+        contexts[1]->draw(buf);
         free(buf);
     }
 

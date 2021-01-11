@@ -40,7 +40,21 @@ Context::Context (int w, int h, char * id) {
     programObject = GLUtils::createProgram(vertexShader, fragmentShader);
     // glBindAttribLocation(programObject, 0, "position");
 
-    printf("[GLUtils] construct done. \n");
+
+
+
+
+
+    glGenTextures(1, &baseTexture);
+
+    loadShader("base", base_vsh, base_fsh);
+    loadShader("standardlips", mask_vsh, mask_fsh);
+
+
+
+
+
+    printf("[Context] construct done. \n");
 }
 
 Context::~Context (void) {
@@ -133,7 +147,7 @@ void Context::test (uint8_t* buffer) {
     glUseProgram( programObject );
 
     GLuint texId = 0;
-    GLuint vVertexObject = 0, tVertexObject = 0;
+    GLuint vVertexBuffer = 0, tVertexBuffer = 0;
     GLuint indexObject = 0;
 
     // Get the attribute/sampler locations
@@ -181,13 +195,13 @@ void Context::test (uint8_t* buffer) {
     };
     GLushort indices[] = {0, 1, 2, 0, 2, 3};
 
-    GLUtils::genBuffer(vVertexObject);
-    GLUtils::setArrayBuffer(vVertices, sizeof(vVertices), vVertexObject, GL_STATIC_DRAW);
-    GLUtils::setVertexAttrib(positionLoc);
+    GLUtils::genBuffer(vVertexBuffer);
+    GLUtils::setArrayBuffer(vVertices, sizeof(vVertices), vVertexBuffer, GL_STATIC_DRAW);
+    GLUtils::setVertexAttrib(positionLoc, vVertexBuffer);
 
-    GLUtils::genBuffer(tVertexObject);
-    GLUtils::setArrayBuffer(tVertices, sizeof(tVertices), tVertexObject, GL_STATIC_DRAW);
-    GLUtils::setVertexAttrib(texCoordLoc);
+    GLUtils::genBuffer(tVertexBuffer);
+    GLUtils::setArrayBuffer(tVertices, sizeof(tVertices), tVertexBuffer, GL_STATIC_DRAW);
+    GLUtils::setVertexAttrib(texCoordLoc, tVertexBuffer);
 
     GLUtils::genBuffer(indexObject);
     GLUtils::setElementArrayBuffer(indices, sizeof(indices), indexObject, GL_STATIC_DRAW);
@@ -197,15 +211,187 @@ void Context::test (uint8_t* buffer) {
 }
 
 
+
+
+
+void Context::loadShader (std::string type, std::string vsh_str, std::string fsh_str) {
+    // load base shader
+    GLuint vertexShader = GLUtils::compileShader(GL_VERTEX_SHADER, &vsh_str);
+    GLuint fragmentShader = GLUtils::compileShader(GL_FRAGMENT_SHADER, &fsh_str);
+    GLuint program = GLUtils::createProgram(vertexShader, fragmentShader);
+    programs[type] = program;
+
+    glUseProgram(program);
+    // TODO 设置不变参数
+}
+
+
+GLint Context::getUnifLocation (std::string type, std::string key) {
+    if (programs.find(type) == programs.end()) {
+        return -1; // not found
+    }
+
+    GLuint program = programs[type];
+    glUseProgram(program);
+    return glGetUniformLocation(program, key.c_str());
+}
+
+bool Context::setUnif1i (std::string type, std::string key, GLint value) {
+    GLuint location = getUnifLocation(type, key);
+    if (location <= 0) {
+        return false;
+    }
+    glUniform1i(location, value);
+    return true;
+}
+bool Context::setUnif1f (std::string type, std::string key, GLfloat value) {
+    GLuint location = getUnifLocation(type, key);
+    if (location <= 0) {
+        return false;
+    }
+    glUniform1f(location, value);
+    return true;
+}
+bool Context::setUnif2f (std::string type, std::string key, GLfloat value1, GLfloat value2) {
+    GLuint location = getUnifLocation(type, key);
+    if (location <= 0) {
+        return false;
+    }
+    glUniform2f(location, value1, value2);
+    return true;
+}
+bool Context::setUnif3f (std::string type, std::string key, GLfloat value1, GLfloat value2, GLfloat value3) {
+    GLuint location = getUnifLocation(type, key);
+    if (location <= 0) {
+        return false;
+    }
+    glUniform3f(location, value1, value2, value3);
+    return true;
+}
+bool Context::setUnif2fv (std::string type, std::string key, GLsizei count, GLfloat* value) {
+    GLuint location = getUnifLocation(type, key);
+    if (location <= 0) {
+        return false;
+    }
+    glUniform2fv(location, count, value);
+    return true;
+}
+
+
+
+
+
+
+void Context::draw (uint8_t* buffer) {
+    printf("[Context] draw \n");
+
+    // Make the context current and use the program
+    emscripten_webgl_make_context_current(context);
+
+    // for (int i = 0; i < 500; i ++) {
+        _draw(buffer);
+    // }
+}
+
+void Context::_draw (uint8_t* buffer) {
+    // TODO set display glViewport();
+
+    // TODO bind incoming frame data GLUtils::bindTextureWithData();
+    // frame.data -> baseTexture
+    glViewport(0, 0, width, height);
+    glActiveTexture(GL_TEXTURE0);
+    GLUtils::bindTextureWithData(baseTexture, width, height, buffer);
+    // TODO check: baseTexture should be filled.
+
+    if (true) {
+        glBindTexture(GL_TEXTURE_2D, baseTexture);
+        renderBase(programs["base"], true);
+        return;
+    }
+
+    if (nullptr == swapFbt) {
+        swapFbt = new SwapFrameBufferTexture(width, height);
+    }
+
+    swapFbt->getToWrite()->useFrameBuffer();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, baseTexture);
+    // renderBase();
+    swapFbt->swap();
+
+}
+
+
+void Context::renderBase (GLuint program, bool revert, bool do_tilt, bool do_filter) {
+    glUseProgram(program);
+
+    if (programs["base"] == program) {
+        if (true == do_tilt) {
+            glUniform1i(glGetUniformLocation(program, "do_tilt"), 1);
+            glUniform3f(glGetUniformLocation(program, "tilt_factor"), 1.0, 0.95, 1.0);
+        } else {
+            glUniform1i(glGetUniformLocation(program, "do_tilt"), 0);
+        }
+        // TODO filter logic
+    }
+
+
+    GLuint vVertexBuffer = 0, tVertexBuffer = 0;
+    GLint positionLoc = glGetAttribLocation(programObject, "aPosition");
+    GLint texCoordLoc = glGetAttribLocation(programObject, "TexCoordIn");
+
+
+    if (0 == vb_base_vec) {
+        GLfloat vVertices[] = {
+            -1.0, 1.0,  // bottom left
+            1.0, 1.0,   // bottom right
+            -1.0, -1.0, // top left
+            1.0, -1.0
+        };
+        GLUtils::genBuffer(vb_base_vec);
+        GLUtils::setArrayBuffer(vVertices, sizeof(vVertices), vb_base_vec, GL_STATIC_DRAW);
+    }
+    GLUtils::setVertexAttrib(positionLoc, vb_base_vec);
+
+    if (revert) {
+        if (0 == vb_base_tex_revert) {
+            GLfloat tVertices[] = {
+                0.0, 0.0,
+                1.0, 0.0,
+                0.0, 1.0,
+                1.0, 1.0
+            };
+            GLUtils::genBuffer(vb_base_tex_revert);
+            GLUtils::setArrayBuffer(tVertices, sizeof(tVertices), vb_base_tex_revert, GL_STATIC_DRAW);
+        }
+        GLUtils::setVertexAttrib(texCoordLoc, vb_base_tex_revert);
+    } else {
+        if (0 == vb_base_tex) {
+            GLfloat tVertices[] = {
+                0.0, 1.0,
+                1.0, 1.0,
+                0.0, 0.0,
+                1.0, 0.0
+            };
+            GLUtils::genBuffer(vb_base_tex);
+            GLUtils::setArrayBuffer(tVertices, sizeof(tVertices), vb_base_tex, GL_STATIC_DRAW);
+        }
+        GLUtils::setVertexAttrib(texCoordLoc, vb_base_tex);
+    }
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
+
 void Context::renderMasks (uint8_t* buffer) {
-    printf("[GLUtils] renderMasks \n");
+    printf("[Context] renderMasks \n");
 
     // Make the context current and use the program
     emscripten_webgl_make_context_current(context);
     glUseProgram(programObject);
 
     // GLuint texId = 0;
-    GLuint vVertexObject = 0, tVertexObject = 0;
+    GLuint vVertexBuffer = 0, tVertexBuffer = 0;
     GLuint disObject = 0;
     GLuint indexObject = 0;
 
@@ -227,7 +413,7 @@ void Context::renderMasks (uint8_t* buffer) {
     // GLUtils::genTexture(texId);
     // glUniform1i(texLoc, 0);
 
-    printf("[GLUtils] ======= width = %d, height = %d\n", width, height);
+    printf("[Context] ======= width = %d, height = %d\n", width, height);
 
     // // Bind it
     // glActiveTexture(GL_TEXTURE0);
@@ -264,34 +450,33 @@ void Context::renderMasks (uint8_t* buffer) {
     }
 
 
-    // // Vertex data of texture bounds
-    // GLfloat vVertices[] = {
-    //     -1.0, 1.0,
-    //     -1.0, -1.0,
-    //     1.0, -1.0,
-    //     1.0, 1.0
-    // };
-    // GLfloat tVertices[] = {
-    //     0.0, 0.0,
-    //     0.0, 1.0,
-    //     1.0, 1.0,
-    //     1.0, 0.0
-    // };
     GLushort indices[] = {0, 63, 1, 1, 63, 2, 63, 62, 2, 2, 62, 3, 62, 61, 3, 3, 61, 4, 61, 60, 4, 4, 60, 5, 60, 59, 5, 5, 59, 6, 59, 58, 6, 6, 58, 7, 58, 57, 7, 7, 57, 8, 57, 56, 8, 8, 56, 9, 56, 55, 9, 9, 55, 10, 55, 54, 10, 10, 54, 11, 54, 53, 11, 11, 53, 12, 53, 52, 12, 12, 52, 13, 52, 51, 13, 13, 51, 14, 51, 50, 14, 14, 50, 15, 50, 49, 15, 15, 49, 16, 49, 48, 16, 16, 48, 17, 48, 47, 17, 17, 47, 18, 47, 46, 18, 18, 46, 19, 46, 45, 19, 19, 45, 20, 45, 44, 20, 20, 44, 21, 44, 43, 21, 21, 43, 22, 43, 42, 22, 22, 42, 23, 42, 41, 23, 23, 41, 24, 41, 40, 24, 24, 40, 25, 40, 39, 25, 25, 39, 26, 39, 38, 26, 26, 38, 27, 38, 37, 27, 27, 37, 28, 37, 36, 28, 28, 36, 29, 36, 35, 29, 29, 35, 30, 35, 34, 30, 30, 34, 31, 34, 33, 31, 31, 33, 32, 64, 127, 65, 65, 127, 66, 127, 126, 66, 66, 126, 67, 126, 125, 67, 67, 125, 68, 125, 124, 68, 68, 124, 69, 124, 123, 69, 69, 123, 70, 123, 122, 70, 70, 122, 71, 122, 121, 71, 71, 121, 72, 121, 120, 72, 72, 120, 73, 120, 119, 73, 73, 119, 74, 119, 118, 74, 74, 118, 75, 118, 117, 75, 75, 117, 76, 117, 116, 76, 76, 116, 77, 116, 115, 77, 77, 115, 78, 115, 114, 78, 78, 114, 79, 114, 113, 79, 79, 113, 80, 113, 112, 80, 80, 112, 81, 112, 111, 81, 81, 111, 82, 111, 110, 82, 82, 110, 83, 110, 109, 83, 83, 109, 84, 109, 108, 84, 84, 108, 85, 108, 107, 85, 85, 107, 86, 107, 106, 86, 86, 106, 87, 106, 105, 87, 87, 105, 88, 105, 104, 88, 88, 104, 89, 104, 103, 89, 89, 103, 90, 103, 102, 90, 90, 102, 91, 102, 101, 91, 91, 101, 92, 101, 100, 92, 92, 100, 93, 100, 99, 93, 93, 99, 94, 99, 98, 94, 94, 98, 95, 98, 97, 95, 95, 97, 96,\
                     0, 127, 64, 32, 96, 97};
-    // GLushort indices[] = {0, 1, 2, 0, 2, 3};
 
-    GLUtils::genBuffer(vVertexObject);
-    GLUtils::setArrayBuffer(vVertices, sizeof(vVertices), vVertexObject, GL_STATIC_DRAW);
-    GLUtils::setVertexAttrib(positionLoc);
+    GLUtils::genBuffer(vVertexBuffer);
+    GLUtils::setArrayBuffer(vVertices, sizeof(vVertices), vVertexBuffer, GL_STATIC_DRAW);
+    GLUtils::setVertexAttrib(positionLoc, vVertexBuffer);
 
-    GLUtils::genBuffer(tVertexObject);
-    GLUtils::setArrayBuffer(disArray, sizeof(disArray), tVertexObject, GL_STATIC_DRAW);
-    GLUtils::setVertexAttrib(texCoordLoc);
+    GLUtils::genBuffer(tVertexBuffer);
+    GLUtils::setArrayBuffer(disArray, sizeof(disArray), tVertexBuffer, GL_STATIC_DRAW);
+    GLUtils::setVertexAttrib(texCoordLoc, tVertexBuffer);
 
     GLUtils::genBuffer(indexObject);
     GLUtils::setElementArrayBuffer(indices, sizeof(indices), indexObject, GL_STATIC_DRAW);
 
     // Draw
     glDrawElements(GL_TRIANGLES, 378, GL_UNSIGNED_SHORT, 0);
+
+    // swapFbt = new SwapFrameBufferTexture(width, height);
+    // swapFbt->setFuncRenderBase(std::bind(&Context::oho, this));
+
+
+    printf("over.\n");
 }
+
+// void Context::oho () {
+//     printf("oho.\n");
+
+// }
+
+
