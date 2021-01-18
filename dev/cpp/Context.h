@@ -23,8 +23,8 @@ public:
 
     // --------------------
 
-    void draw (uint8_t* buffer);
-    void _draw (uint8_t* buffer);
+    void draw (GLuint texture_offset);
+    void _draw (GLuint texture_offset);
 
     void rb ();
     void renderBase (GLuint program, bool revert=false, bool do_tilt=false, bool do_filter=false);
@@ -71,6 +71,8 @@ private:
     std::map<std::string, GLuint> programs;
 
     GLuint baseTexture;
+    FrameBufferTexture* baseFbt;
+
     std::map<std::string, FrameBufferTexture*> fbts;
     SwapFrameBufferTexture* swapFbt = nullptr;
 

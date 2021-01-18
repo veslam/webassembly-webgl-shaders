@@ -82,20 +82,31 @@
 
 
             console.log(texture)
+
             // 放置于 TEXTURE4
-            gl.activeTexture(gl.TEXTURE4)
+            const texture_offset = 4
+            console.log('texture_offset = ' + texture_offset)
+
+
+
+            for (let i = 0; i < 100; i ++)
+            {
+            let t1 = new Date().getTime();
+
+
+            // gl.activeTexture(gl.TEXTURE4)
+            gl.activeTexture(gl.TEXTURE0 + texture_offset)
             gl.bindTexture(gl.TEXTURE_2D, texture)
 
-
-            for (let i = 0; i < 100; i ++) {
-            let t1 = new Date().getTime();
+            let t2 = new Date().getTime();
 
             // Pass the imageData to the C++ code
             // ccallArrays("loadTexture", null, ["array"], [imageData], {heapIn: "HEAPU8"})
-            ccallArrays("runTest", null, ["array"], [imageData], {heapIn: "HEAPU8"})
+            // ccallArrays("runTest", null, ["array"], [imageData], {heapIn: "HEAPU8"})
+            Module.ccall("runTest", null, ["number"], [texture_offset])
 
-            let t2 = new Date().getTime();
-            console.log(t2 - t1);
+            let t3 = new Date().getTime();
+            console.log(t3 - t2);
             }
 
         })

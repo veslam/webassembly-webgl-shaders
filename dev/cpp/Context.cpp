@@ -50,7 +50,8 @@ Context::Context (int w, int h, char * id) {
 
 
 
-    glGenTextures(1, &baseTexture);
+    // glGenTextures(1, &baseTexture);
+    baseFbt = createFrameBufferTexture("base", width, height);
 
     loadShader("base", base_vsh, base_fsh);
     loadShader("skincolor", base_vsh, skincolor_fsh);
@@ -304,7 +305,8 @@ bool Context::setUnif2fv (std::string type, std::string key, GLsizei count, GLfl
 
 
 
-void Context::draw (uint8_t* buffer) {
+// void Context::draw (uint8_t* buffer) {
+void Context::draw (GLuint texture_offset) {
     //printf("[Context] draw \n");
 
     // Make the context current and use the program
@@ -314,14 +316,17 @@ void Context::draw (uint8_t* buffer) {
     // start = clock();
 
     // for (int i = 0; i < 500; i ++) {
-        _draw(buffer);
+        _draw(texture_offset);
     // }
 
     // end = clock();
     // printf("duration = %f \n", float(end-start)/CLOCKS_PER_SEC);
 }
 
-void Context::_draw (uint8_t* buffer) {
+// void Context::_draw (uint8_t* buffer) {
+void Context::_draw (GLuint texture_offset) {
+    // printf("[Context] _draw  texture_offset = %d\n", texture_offset);
+
 
     float lmks81[81][2] = {{357.0332251545839, 590.5873488917221}, {215.14550342016963, 354.35155725984316}, {213.04614047250232, 387.9332321022413}, {214.28205932648785, 421.73824826523037}, {218.49465782187605, 455.1360912400546}, {226.13735631966767, 487.98334302617593}, {240.21737437721393, 518.8410604348464}, {261.0069418604583, 545.5176331937074}, {287.77947890670305, 567.6712365389187}, {319.57531097347515, 583.8518523742041}, {503.2887269600001, 370.96338252946214}, {501.7399268066724, 402.50144970738813}, {497.4047897035719, 434.1596804741952}, {490.0274804270349, 465.43116348879124}, {480.05247024092444, 496.325112740638}, {465.5608485432367, 525.3644679163765}, {446.16331922454725, 550.5079466173871}, {421.5594255459295, 570.9347493235493}, {392.30541926165625, 585.8267378026521}, {305.64214364482336, 361.62410789809104}, {277.3051081665667, 356.44335805002277}, {291.2770252041454, 360.3090269118869}, {319.7426810935558, 360.75474356272827}, {305.49147663225364, 358.7569061539398}, {333.02574303570447, 358.5954576376949}, {305.35316229669604, 356.9375472870163}, {291.19316372686654, 356.70682904515434}, {319.74524677645104, 357.0435150404162}, {257.6817174930984, 319.3390818312147}, {279.47800471786786, 318.7902535279158}, {301.912646053452, 318.0245750536802}, {325.3188811459787, 318.30075022490456}, {348.5954913531743, 316.6956678333672}, {277.0857882545713, 303.07903761197}, {302.26610945625964, 297.96296455704}, {328.3009021010437, 302.01172809691485}, {312.021730686963, 499.9690095042882}, {364.274326490471, 522.303374506202}, {339.87683849055895, 501.78485034523345}, {326.5617764987429, 511.0190279068046}, {343.79195748003656, 518.6904983653795}, {389.6233374389966, 504.4028020296018}, {400.0554110936999, 515.0212291890139}, {383.7302006091612, 520.9424186241677}, {366.02619337289883, 503.40071831042496}, {413.27274514888336, 505.50809083559653}, {366.33825070246326, 501.55651137506914}, {354.30496531928077, 484.17756215117663}, {333.0257462174827, 490.6118585183475}, {340.33869225665035, 499.66456447232684}, {381.08908472058386, 485.84286864298457}, {398.34356847894605, 494.28438887557036}, {389.7183962405296, 502.3748297948406}, {367.587175102182, 488.014752213433}, {351.832539512131, 360.23484131504495}, {337.8058545795142, 413.2140858459112}, {348.005441886836, 446.8767212371872}, {371.40358056546836, 454.02542675136135}, {397.9740354845244, 363.0987330344175}, {405.6525922931681, 417.46087741352244}, {393.0099630395986, 449.0623751378715}, {326.83643862961196, 436.4908122208589}, {412.44373045363704, 441.40577677234546}, {374.7989263154989, 425.58895634714884}, {441.004124528158, 369.89011350204663}, {414.2110206896884, 363.23451576982205}, {427.2944842402255, 367.4562973490716}, {454.0955762992904, 369.93209788159726}, {440.34175609594206, 367.4370353217792}, {466.76889584726257, 368.01113713597175}, {441.536940106374, 365.5557056395867}, {427.57855965289104, 363.8931455632987}, {454.6267900001318, 366.8185625801343}, {409.11119564471534, 320.8150883472871}, {430.4963283300678, 324.7898969276757}, {451.90439866883605, 327.3170183575162}, {471.17684771086766, 330.841273903791}, {489.19044014590537, 333.77968371415466}, {429.7362874222158, 308.85816138807456}, {454.18050041144176, 307.8948484268239}, {476.05615034018274, 315.69593002325865}};
 
@@ -329,25 +334,31 @@ void Context::_draw (uint8_t* buffer) {
 
     // ------------------------------------------------------------
 
-    // frame.data -> baseTexture
-    glViewport(0, 0, width, height);
-    // glActiveTexture(GL_TEXTURE4);
-    // glBindTexture(GL_TEXTURE_2D, 4);
+    // buffer -> baseTexture
+    // glViewport(0, 0, width, height);
+    // glActiveTexture(GL_TEXTURE0);
+    // glBindTexture(GL_TEXTURE_2D, 0);
     // GLUtils::bindTextureWithData(baseTexture, width, height, buffer);
 
 
+    // bool lmksReady = !(nullptr == lmks81 || nullptr == lipsPosition);
+    bool lmksReady = true;
 
-
-
-
+    // render to baseFbt
+    if (lmksReady) {
+        baseFbt->useFrameBuffer();
+        setUnif1i("base", "Texture", texture_offset);
+        renderBase(programs["base"]);
+    }
     // 直接画到屏幕 tested & closed switch.
-    if (true) {
-        // glBindTexture(GL_TEXTURE_2D, baseTexture);
-
-        setUnif1i("base", "Texture", 4);
+    else {
+        setUnif1i("base", "Texture", texture_offset);
         renderBase(programs["base"], true);
         return;
     }
+    // 尽快恢复
+    setUnif1i("base", "Texture", 0);
+
 
     // 画到 Swap
     // create Swap
@@ -360,8 +371,7 @@ void Context::_draw (uint8_t* buffer) {
     // [baseTexture -> swap]
     swapFbt->getToWrite()->useFrameBuffer();
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, baseTexture);
-    setUnif1i("base", "Texture", 0);
+    baseFbt->useTexture();
     renderBase(programs["base"]);
     swapFbt->swap();
 
@@ -372,7 +382,7 @@ void Context::_draw (uint8_t* buffer) {
     FrameBufferTexture* skinColor = createFrameBufferTexture("skincolor", 1, 1);
     skinColor->useFrameBuffer();
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, baseTexture);
+    baseFbt->useTexture();
     renderSkinColor(width, height, lmks81);
 
     // [swap -> beauty]
@@ -441,7 +451,7 @@ void Context::_draw (uint8_t* buffer) {
             FrameBufferTexture* lipsColor = createFrameBufferTexture("lipscolor", 2, 2);
             lipsColor->useFrameBuffer();
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, baseTexture);
+            baseFbt->useTexture();
             renderLipsColor(lipsLmks_1d);
 
             if (nullptr == lipsColorData) {

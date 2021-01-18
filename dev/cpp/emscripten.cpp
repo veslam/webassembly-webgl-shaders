@@ -47,12 +47,10 @@ extern "C" {
     }
 
     EMSCRIPTEN_KEEPALIVE
-    void runTest (uint8_t *buf, int bufSize) {
-        printf("[WASM] Runing Tests \n");
+    void runTest (int texture_offset) {
+        // printf("[WASM] Runing Tests texture_offset = %d\n", texture_offset);
 
-        // contexts[1]->renderMasks(buf);
-        contexts[1]->draw(buf);
-        free(buf);
+        contexts[1]->draw(texture_offset);
     }
 
 }
