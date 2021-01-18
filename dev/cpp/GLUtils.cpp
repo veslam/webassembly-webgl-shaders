@@ -3,7 +3,7 @@
 
 
 GLuint GLUtils::compileShader (GLenum type, std::string* source) {
-	printf("[GLUtils] compileShader \n");
+	// printf("[GLUtils] compileShader \n");
 
     // Create shader object
     const GLchar* sourceString[1];
@@ -40,7 +40,7 @@ GLuint GLUtils::compileShader (GLenum type, std::string* source) {
 }
 
 GLuint GLUtils::createProgram (GLuint vertexShader, GLuint fragmentShader) {
-	printf("[GLUtils] createProgram \n");
+	// printf("[GLUtils] createProgram \n");
 
     // Build program
     GLuint programObject = glCreateProgram();
